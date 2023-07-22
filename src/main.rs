@@ -1,6 +1,9 @@
 use yew::prelude::*;
 
-use crate::calculator::{calc_beam_points, iter_elevations, ElevationRange};
+use crate::{
+    calculator::{calc_beam_points, iter_elevations, ElevationRange},
+    plotter::{create_grid_lines, PlotAxisConfig, PlotAxisName},
+};
 
 #[function_component(BeamViewer)]
 fn beam_viewer() -> Html {
@@ -32,14 +35,15 @@ fn beam_viewer() -> Html {
 
     let width = format!("{:.0}", max_range_meter);
     let view_box = format!("0 0 {} 15000", width);
+    let axis1 = PlotAxisConfig::new(PlotAxisName::X, 0, max_range_meter as u32, 50_000, 10_000);
+    let axis2 = PlotAxisConfig::new(PlotAxisName::Y, 0, 15_000, 5_000, 1_000);
+    let grid_lines = create_grid_lines(&axis1, &axis2);
 
     html! {
         <svg id="viewer">
             <g transform="scale(0.8, -6)" transform-origin="center">
                 <svg viewBox={ view_box }>
-                    <line x1="0" x2={ width } y1="10000" y2="10000" class="minor-grid-line" />
-                    <line x1="10000" x2="10000" y1="0" y2="15000" class="minor-grid-line" />
-                    <line x1="100000" x2="100000" y1="0" y2="15000" class="major-grid-line" />
+                    { grid_lines }
                     { polylines }
                     <rect width="100%" height="100%" class="frame" />
                 </svg>
@@ -73,3 +77,4 @@ fn main() {
 }
 
 mod calculator;
+mod plotter;
