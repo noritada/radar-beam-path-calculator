@@ -14,6 +14,10 @@ fn beam_viewer() -> Html {
         ElevationRange::new(150, 50),
         ElevationRange::new(450, 0),
     ];
+    let el_highlights = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30]
+        .into_iter()
+        .map(|i| i as f64)
+        .collect::<Vec<_>>();
 
     let max_range_meter = 300_000_f64;
     let lat_deg = 36.0;
@@ -30,7 +34,8 @@ fn beam_viewer() -> Html {
                 &lat_deg,
                 &alt_meter,
             );
-            create_polyline_for_beam(beam_points)
+            let highlighted = el_highlights.contains(&el);
+            create_polyline_for_beam(beam_points, highlighted)
         })
         .collect::<Html>();
 
@@ -64,13 +69,18 @@ fn beam_viewer() -> Html {
     }
 }
 
-fn create_polyline_for_beam(points: impl Iterator<Item = calculator::AtmosphericPoint>) -> Html {
+fn create_polyline_for_beam(
+    points: impl Iterator<Item = calculator::AtmosphericPoint>,
+    highlighted: bool,
+) -> Html {
     let polygon_points = points
         .map(|point| format!("{:.0}, {:.0}", point.dist_meter, point.alt_meter))
         .collect::<Vec<_>>()
         .join(" ");
+    let additional_class = if highlighted { " highlighted" } else { "" };
+    let class_names = format!("beam-curve{}", additional_class);
     html! {
-        <polyline points={ polygon_points } class="beam-curve"/>
+        <polyline points={ polygon_points } class={ class_names }/>
     }
 }
 
