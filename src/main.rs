@@ -18,6 +18,7 @@ fn beam_viewer() -> Html {
     let max_range_meter = 300_000_f64;
     let lat_deg = 36.0;
     let alt_meter = 0.0;
+    let max_alt_meter = 15_000_f64;
     let n_range_section = 100;
 
     let polylines = iter_elevations(&el_ranges)
@@ -33,16 +34,25 @@ fn beam_viewer() -> Html {
         })
         .collect::<Html>();
 
-    let width = format!("{:.0}", max_range_meter);
-    let view_box = format!("0 0 {} 15000", width);
+    let plot_size = 1000_f64;
+    let aspect_ratio = max_range_meter / max_alt_meter;
+    let inner_height = plot_size / aspect_ratio;
+    let inner_height = format!("{:.0}", inner_height);
+    let inner_width = format!("{:.0}", plot_size);
+    let inner_view_box = format!("0 0 {} {}", max_range_meter, max_alt_meter);
+    let transform = format!(
+        "scale(1 -{:.0}) translate(0 -{})",
+        aspect_ratio, inner_height
+    );
+    let outer_view_box = format!("0 0 {:.0} {:.0}", plot_size, plot_size);
     let axis1 = PlotAxisConfig::new(PlotAxisName::X, 0, max_range_meter as u32, 50_000, 10_000);
-    let axis2 = PlotAxisConfig::new(PlotAxisName::Y, 0, 15_000, 5_000, 1_000);
+    let axis2 = PlotAxisConfig::new(PlotAxisName::Y, 0, max_alt_meter as u32, 5_000, 1_000);
     let grid_lines = create_grid_lines(&axis1, &axis2);
 
     html! {
-        <svg id="viewer">
-            <g transform="scale(0.8, -6)" transform-origin="center">
-                <svg viewBox={ view_box }>
+        <svg id="viewer" viewBox={ outer_view_box }>
+            <g transform={ transform }>
+                <svg viewBox={ inner_view_box } width={ inner_width } height={ inner_height }>
                     { grid_lines }
                     { polylines }
                     <rect width="100%" height="100%" class="frame" />
