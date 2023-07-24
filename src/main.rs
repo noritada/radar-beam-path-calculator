@@ -1,3 +1,5 @@
+use wasm_bindgen::JsCast;
+use web_sys::{EventTarget, HtmlInputElement};
 use yew::prelude::*;
 
 use crate::{
@@ -5,8 +7,14 @@ use crate::{
     plotter::{create_grid_lines, PlotAxisConfig, PlotAxisName},
 };
 
+#[derive(Properties, PartialEq)]
+pub struct BeamViewerProps {
+    pub lat_deg: f64,
+    pub alt_meter: f64,
+}
+
 #[function_component(BeamViewer)]
-fn beam_viewer() -> Html {
+fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html {
     let el_ranges = vec![
         ElevationRange::new(0, 2),
         ElevationRange::new(50, 5),
@@ -20,20 +28,13 @@ fn beam_viewer() -> Html {
         .collect::<Vec<_>>();
 
     let max_range_meter = 300_000_f64;
-    let lat_deg = 36.0;
-    let alt_meter = 0.0;
     let max_alt_meter = 15_000_f64;
     let n_range_section = 100;
 
     let polylines = iter_elevations(&el_ranges)
         .map(|el| {
-            let beam_points = calc_beam_points(
-                &max_range_meter,
-                &n_range_section,
-                &el,
-                &lat_deg,
-                &alt_meter,
-            );
+            let beam_points =
+                calc_beam_points(&max_range_meter, &n_range_section, &el, lat_deg, alt_meter);
             let highlighted = el_highlights.contains(&el);
             create_polyline_for_beam(beam_points, highlighted)
         })
@@ -86,10 +87,53 @@ fn create_polyline_for_beam(
 
 #[function_component(App)]
 fn app() -> Html {
+    let alt_meter_handle = use_state(|| 0.0_f64);
+    let alt_meter = *alt_meter_handle;
+    let lat_deg_handle = use_state(|| 0.0_f64);
+    let lat_deg = *lat_deg_handle;
+
+    let on_alt_change = Callback::from(move |e: Event| {
+        let target: EventTarget = e.target().expect("unknown event target");
+        let value = target.unchecked_into::<HtmlInputElement>().value();
+        if let Ok(value) = value.parse() {
+            alt_meter_handle.set(value);
+        }
+        // if value is not numeric, just ignore.
+    });
+
+    let on_lat_change = Callback::from(move |e: Event| {
+        let target: EventTarget = e.target().expect("unknown event target");
+        let value = target.unchecked_into::<HtmlInputElement>().value();
+        if let Ok(value) = value.parse() {
+            lat_deg_handle.set(value);
+        }
+        // if value is not numeric, just ignore.
+    });
+
+    let alt_meter_value = format!("{}", alt_meter);
+    let lat_deg_value = format!("{}", lat_deg);
+
     html! {
         <>
             <h1>{ "Radar beam calculator" }</h1>
-            <BeamViewer/>
+            <div>
+                <label for="radar-altitude">{"Altitude (m)"}</label>
+                <input onchange={ on_alt_change }
+                    id="radar-altitude"
+                    type="text"
+                    value={ alt_meter_value }
+                    pattern="[0-9]+(\\.[0-9]+)?"
+                />
+                <br/>
+                <label for="radar-latitude">{"Latitude (deg)"}</label>
+                <input onchange={ on_lat_change }
+                    id="radar-latitude"
+                    type="text"
+                    value={ lat_deg_value }
+                    pattern="[0-9]+(\\.[0-9]+)?"
+                />
+            </div>
+            <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } />
         </>
     }
 }
