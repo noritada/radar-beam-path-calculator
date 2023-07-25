@@ -41,9 +41,20 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
         .collect::<Html>();
 
     let plot_size = 1000_f64;
-    let margin_size = 100_f64;
+    let margin_size = 150_f64;
     let aspect_ratio = max_range_meter / max_alt_meter;
     let inner_height = plot_size / aspect_ratio;
+
+    let axis_label_distance = 75_f64;
+    let x_label_loc = (
+        margin_size + plot_size / 2_f64,
+        margin_size + plot_size + axis_label_distance,
+    );
+    let y_label_loc = (
+        margin_size - axis_label_distance,
+        margin_size + plot_size / 2_f64,
+    );
+
     let inner_height = format!("{:.0}", inner_height);
     let inner_width = format!("{:.0}", plot_size);
     let inner_view_box = format!("0 0 {} {}", max_range_meter, max_alt_meter);
@@ -56,6 +67,10 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
     let axis1 = PlotAxisConfig::new(PlotAxisName::X, 0, max_range_meter as u32, 50_000, 10_000);
     let axis2 = PlotAxisConfig::new(PlotAxisName::Y, 0, max_alt_meter as u32, 5_000, 1_000);
     let grid_lines = create_grid_lines(&axis1, &axis2);
+    let x_label_loc_x = format!("{:.0}", x_label_loc.0);
+    let x_label_loc_y = format!("{:.0}", x_label_loc.1);
+    let y_label_loc_x = format!("{:.0}", y_label_loc.0);
+    let y_label_loc_y = format!("{:.0}", y_label_loc.1);
 
     html! {
         <svg id="viewer" viewBox={ outer_view_box }>
@@ -66,6 +81,24 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
                     <rect width="100%" height="100%" class="frame" />
                 </svg>
             </g>
+            <text
+                class="label"
+                x={ x_label_loc_x }
+                y={ x_label_loc_y }
+                text-anchor="middle"
+                dominant-baseline="hanging"
+            >
+                { "Distance (km)" }
+            </text>
+            <text
+                class="label y-axis-label"
+                x={ y_label_loc_x }
+                y={ y_label_loc_y }
+                text-anchor="middle"
+                dominant-baseline="auto"
+            >
+                { "Altitude (km)" }
+            </text>
         </svg>
     }
 }
