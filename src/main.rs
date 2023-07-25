@@ -120,17 +120,15 @@ fn app() -> Html {
                 <label for="radar-altitude">{"Altitude (m)"}</label>
                 <input onchange={ on_alt_change }
                     id="radar-altitude"
-                    type="text"
+                    type="number"
                     value={ alt_meter_value }
-                    pattern="[0-9]+(\\.[0-9]+)?"
                 />
                 <br/>
                 <label for="radar-latitude">{"Latitude (deg)"}</label>
                 <input onchange={ on_lat_change }
                     id="radar-latitude"
-                    type="text"
+                    type="number"
                     value={ lat_deg_value }
-                    pattern="[0-9]+(\\.[0-9]+)?"
                 />
             </div>
             <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } />
