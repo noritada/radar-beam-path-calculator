@@ -55,6 +55,7 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
         margin_size + plot_size / 2_f64,
     );
 
+    let tick_label_distance = 20_f64;
     let inner_height = format!("{:.0}", inner_height);
     let inner_width = format!("{:.0}", plot_size);
     let inner_view_box = format!("0 0 {} {}", max_range_meter, max_alt_meter);
@@ -71,6 +72,10 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
     let x_label_loc_y = format!("{:.0}", x_label_loc.1);
     let y_label_loc_x = format!("{:.0}", y_label_loc.0);
     let y_label_loc_y = format!("{:.0}", y_label_loc.1);
+    let tick_labels_axis1 =
+        create_tick_labels(&axis1, &margin_size, &plot_size, &tick_label_distance);
+    let tick_labels_axis2 =
+        create_tick_labels(&axis2, &margin_size, &plot_size, &tick_label_distance);
 
     html! {
         <svg id="viewer" viewBox={ outer_view_box }>
@@ -82,7 +87,7 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
                 </svg>
             </g>
             <text
-                class="label"
+                class="axis-label"
                 x={ x_label_loc_x }
                 y={ x_label_loc_y }
                 text-anchor="middle"
@@ -91,7 +96,7 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
                 { "Distance (km)" }
             </text>
             <text
-                class="label y-axis-label"
+                class="axis-label y-axis"
                 x={ y_label_loc_x }
                 y={ y_label_loc_y }
                 text-anchor="middle"
@@ -99,6 +104,8 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
             >
                 { "Altitude (km)" }
             </text>
+            { tick_labels_axis1 }
+            { tick_labels_axis2 }
         </svg>
     }
 }
@@ -115,6 +122,61 @@ fn create_polyline_for_beam(
     let class_names = format!("beam-curve{}", additional_class);
     html! {
         <polyline points={ polygon_points } class={ class_names }/>
+    }
+}
+
+fn create_tick_labels(
+    axis: &PlotAxisConfig,
+    margin_size: &f64,
+    plot_size: &f64,
+    tick_label_distance: &f64,
+) -> Html {
+    let factor = plot_size / (axis.end - axis.start) as f64;
+    let origin = match axis.name {
+        PlotAxisName::X => (*margin_size, margin_size + plot_size + tick_label_distance),
+        PlotAxisName::Y => (margin_size - tick_label_distance, margin_size + plot_size),
+    };
+
+    (axis.start..=axis.end)
+        .step_by(axis.major_step as usize)
+        .map(|val| {
+            let inc = val as f64 * factor;
+            let coord = match axis.name {
+                PlotAxisName::X => (origin.0 + inc, origin.1),
+                PlotAxisName::Y => (origin.0, origin.1 - inc),
+            };
+            let km = val / 1000;
+            create_tick_label(km, coord, &axis.name)
+        })
+        .collect::<Html>()
+}
+
+fn create_tick_label(val: u32, (x, y): (f64, f64), axis: &PlotAxisName) -> Html {
+    let x = format!("{:.0}", x);
+    let y = format!("{:.0}", y);
+    match axis {
+        PlotAxisName::X => html! {
+            <text
+                class="tick-label x-axis"
+                x={ x }
+                y={ y }
+                text-anchor="middle"
+                dominant-baseline="hanging"
+            >
+                { val }
+            </text>
+        },
+        PlotAxisName::Y => html! {
+            <text
+                class="tick-label y-axis"
+                x={ x }
+                y={ y }
+                text-anchor="end"
+                dominant-baseline="middle"
+            >
+                { val }
+            </text>
+        },
     }
 }
 
