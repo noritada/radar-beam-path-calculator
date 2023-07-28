@@ -210,7 +210,7 @@ fn app() -> Html {
 
     html! {
         <>
-            <h1>{ "Radar beam calculator" }</h1>
+            <h1>{ "Radar beam path calculator" }</h1>
             <div>
                 <label for="radar-altitude">{"Altitude (m)"}</label>
                 <input onchange={ on_alt_change }

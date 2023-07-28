@@ -1,5 +1,5 @@
 [package]
-name = "radar-beam-calculator"
+name = "radar-beam-path-calculator"
 version = "0.1.0"
 edition = "2021"
 
