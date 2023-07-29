@@ -211,22 +211,26 @@ fn app() -> Html {
     html! {
         <>
             <h1>{ "Radar beam path calculator" }</h1>
-            <div>
-                <label for="radar-altitude">{"Altitude (m)"}</label>
-                <input onchange={ on_alt_change }
-                    id="radar-altitude"
-                    type="number"
-                    value={ alt_meter_value }
-                />
-                <br/>
-                <label for="radar-latitude">{"Latitude (deg)"}</label>
-                <input onchange={ on_lat_change }
-                    id="radar-latitude"
-                    type="number"
-                    value={ lat_deg_value }
-                />
+            <div id="main">
+                <div id="side-menu">
+                    <label for="radar-altitude">{"Altitude (m)"}</label>
+                    <input onchange={ on_alt_change }
+                        id="radar-altitude"
+                        type="number"
+                        value={ alt_meter_value }
+                    />
+                    <br/>
+                    <label for="radar-latitude">{"Latitude (deg)"}</label>
+                    <input onchange={ on_lat_change }
+                        id="radar-latitude"
+                        type="number"
+                        value={ lat_deg_value }
+                    />
+                </div>
+                <div>
+                    <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } />
+                </div>
             </div>
-            <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } />
         </>
     }
 }
