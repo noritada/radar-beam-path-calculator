@@ -31,14 +31,29 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
     let max_alt_meter = 15_000_f64;
     let n_range_section = 100;
 
-    let polylines = iter_elevations(&el_ranges)
+    let el_beam_points = iter_elevations(&el_ranges)
         .map(|el| {
             let beam_points =
-                calc_beam_points(&max_range_meter, &n_range_section, &el, lat_deg, alt_meter);
+                calc_beam_points(&max_range_meter, &n_range_section, &el, lat_deg, alt_meter)
+                    .collect::<Vec<_>>();
             let highlighted = el_highlights.contains(&el);
-            create_polyline_for_beam(beam_points, highlighted)
+            (el, highlighted, beam_points)
         })
+        .collect::<Vec<_>>();
+    let polylines = el_beam_points
+        .iter()
+        .map(|(_el, highlighted, points)| create_polyline_for_beam(points.iter(), *highlighted))
         .collect::<Html>();
+    let el_labels = el_beam_points
+        .iter()
+        .filter_map(|(el, highlighted, points)| {
+            if *highlighted {
+                let loc = locate_beam_labels(points.iter(), &max_range_meter, &max_alt_meter);
+                Some((el, loc))
+            } else {
+                None
+            }
+        });
 
     let plot_size = 1000_f64;
     let margin_size = 150_f64;
@@ -76,6 +91,13 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
         create_tick_labels(&axis1, &margin_size, &plot_size, &tick_label_distance);
     let tick_labels_axis2 =
         create_tick_labels(&axis2, &margin_size, &plot_size, &tick_label_distance);
+    let el_labels = create_beam_labels(
+        el_labels,
+        (&axis1, &axis2),
+        &margin_size,
+        &plot_size,
+        &tick_label_distance,
+    );
 
     html! {
         <svg id="viewer" viewBox={ outer_view_box }>
@@ -106,12 +128,13 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
             </text>
             { tick_labels_axis1 }
             { tick_labels_axis2 }
+            { el_labels }
         </svg>
     }
 }
 
-fn create_polyline_for_beam(
-    points: impl Iterator<Item = calculator::AtmosphericPoint>,
+fn create_polyline_for_beam<'a>(
+    points: impl Iterator<Item = &'a calculator::AtmosphericPoint>,
     highlighted: bool,
 ) -> Html {
     let polygon_points = points
@@ -123,6 +146,76 @@ fn create_polyline_for_beam(
     html! {
         <polyline points={ polygon_points } class={ class_names }/>
     }
+}
+
+enum BeamLabelLoc {
+    MaxAltitude(f64),
+    MaxDistance(f64),
+}
+
+fn locate_beam_labels<'a>(
+    points: impl Iterator<Item = &'a calculator::AtmosphericPoint>,
+    max_range_meter: &f64,
+    max_alt_meter: &f64,
+) -> BeamLabelLoc {
+    let mut iter = points.peekable();
+    while let Some(point) = iter.next() {
+        if point.alt_meter > *max_alt_meter {
+            return BeamLabelLoc::MaxAltitude(point.dist_meter);
+        } else if point.dist_meter > *max_range_meter {
+            return BeamLabelLoc::MaxDistance(point.alt_meter);
+        } else if iter.peek().is_none() {
+            return BeamLabelLoc::MaxDistance(point.alt_meter);
+        }
+    }
+    unreachable!()
+}
+
+fn create_beam_labels<'a>(
+    labels: impl Iterator<Item = (&'a f64, BeamLabelLoc)>,
+    axis: (&PlotAxisConfig, &PlotAxisConfig),
+    margin_size: &f64,
+    plot_size: &f64,
+    tick_label_distance: &f64,
+) -> Html {
+    let x_factor = plot_size / (axis.0.end - axis.0.start) as f64;
+    let y_factor = plot_size / (axis.1.end - axis.1.start) as f64;
+
+    let labels = labels.map(|(el, loc)| {
+        let coord = match loc {
+            BeamLabelLoc::MaxAltitude(dist) => {
+                let inc = dist * x_factor;
+                (margin_size + inc, margin_size - tick_label_distance)
+            }
+            BeamLabelLoc::MaxDistance(alt) => {
+                let inc = alt * y_factor;
+                (
+                    margin_size + plot_size + tick_label_distance,
+                    margin_size + plot_size - inc,
+                )
+            }
+        };
+        (el, coord)
+    });
+
+    labels
+        .map(|(el, coord)| {
+            let el = format!("{:.0}", el);
+            let x = format!("{:.0}", coord.0);
+            let y = format!("{:.0}", coord.1);
+            html! {
+            <text
+                class="elevation-label y-axis"
+                x={ x }
+                y={ y }
+                text-anchor="end"
+                dominant-baseline="middle"
+            >
+                { el }
+            </text>
+            }
+        })
+        .collect::<Html>()
 }
 
 fn create_tick_labels(
