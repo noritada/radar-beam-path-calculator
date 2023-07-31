@@ -75,3 +75,80 @@ fn create_grid_line(
         })
         .collect::<Html>()
 }
+
+pub(crate) struct LabelPlotter {
+    origin: (f64, f64),
+    end: (f64, f64),
+    factor: (f64, f64),
+}
+
+impl LabelPlotter {
+    fn new(origin: (f64, f64), end: (f64, f64), factor: (f64, f64)) -> Self {
+        Self {
+            origin,
+            end,
+            factor,
+        }
+    }
+
+    pub(crate) fn from_frame(
+        axis: (&PlotAxisConfig, &PlotAxisConfig),
+        plot_size: f64,
+        margin_size: f64,
+    ) -> Self {
+        let origin = (margin_size, margin_size + plot_size);
+        let end = (margin_size + plot_size, margin_size);
+        let factor = (
+            plot_size / (axis.0.end - axis.0.start) as f64,
+            plot_size / (axis.1.end - axis.1.start) as f64,
+        );
+        Self {
+            origin,
+            end,
+            factor,
+        }
+    }
+
+    pub(crate) fn plot(&self, label: &str, loc: &LabelLoc, distance: f64, class: &str) -> Html {
+        let distance = match loc {
+            LabelLoc::TopAxis(_) | LabelLoc::LeftAxis(_) => -distance,
+            LabelLoc::RightAxis(_) | LabelLoc::BottomAxis(_) => distance,
+        };
+        let x = match loc {
+            LabelLoc::TopAxis(x) | LabelLoc::BottomAxis(x) => self.origin.0 + x * self.factor.0,
+            LabelLoc::RightAxis(_) => self.end.0 + distance,
+            LabelLoc::LeftAxis(_) => self.origin.0 + distance,
+        };
+        let y = match loc {
+            LabelLoc::TopAxis(_) => self.end.1 + distance,
+            LabelLoc::RightAxis(y) | LabelLoc::LeftAxis(y) => self.origin.1 - y * self.factor.1,
+            LabelLoc::BottomAxis(_) => self.origin.1 + distance,
+        };
+
+        let axis_class = match loc {
+            LabelLoc::TopAxis(_) => "frame-top",
+            LabelLoc::RightAxis(_) => "frame-right",
+            LabelLoc::BottomAxis(_) => "frame-bottom",
+            LabelLoc::LeftAxis(_) => "frame-left",
+        };
+        let class = classes!(class.to_owned(), axis_class);
+        let x = format!("{:.0}", x);
+        let y = format!("{:.0}", y);
+        html! {
+            <text
+                class={ class }
+                x={ x }
+                y={ y }
+            >
+                { label }
+            </text>
+        }
+    }
+}
+
+pub(crate) enum LabelLoc {
+    TopAxis(f64),
+    RightAxis(f64),
+    BottomAxis(f64),
+    LeftAxis(f64),
+}

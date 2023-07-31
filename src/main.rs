@@ -4,7 +4,7 @@ use yew::prelude::*;
 
 use crate::{
     calculator::{calc_beam_points, iter_elevations, ElevationRange},
-    plotter::{create_grid_lines, PlotAxisConfig, PlotAxisName},
+    plotter::{create_grid_lines, LabelLoc, LabelPlotter, PlotAxisConfig, PlotAxisName},
 };
 
 #[derive(Properties, PartialEq)]
@@ -61,15 +61,6 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
     let inner_height = plot_size / aspect_ratio;
 
     let axis_label_distance = 75_f64;
-    let x_label_loc = (
-        margin_size + plot_size / 2_f64,
-        margin_size + plot_size + axis_label_distance,
-    );
-    let y_label_loc = (
-        margin_size - axis_label_distance,
-        margin_size + plot_size / 2_f64,
-    );
-
     let tick_label_distance = 20_f64;
     let inner_height = format!("{:.0}", inner_height);
     let inner_width = format!("{:.0}", plot_size);
@@ -83,21 +74,23 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
     let axis1 = PlotAxisConfig::new(PlotAxisName::X, 0, max_range_meter as u32, 50_000, 10_000);
     let axis2 = PlotAxisConfig::new(PlotAxisName::Y, 0, max_alt_meter as u32, 5_000, 1_000);
     let grid_lines = create_grid_lines(&axis1, &axis2);
-    let x_label_loc_x = format!("{:.0}", x_label_loc.0);
-    let x_label_loc_y = format!("{:.0}", x_label_loc.1);
-    let y_label_loc_x = format!("{:.0}", y_label_loc.0);
-    let y_label_loc_y = format!("{:.0}", y_label_loc.1);
-    let tick_labels_axis1 =
-        create_tick_labels(&axis1, &margin_size, &plot_size, &tick_label_distance);
-    let tick_labels_axis2 =
-        create_tick_labels(&axis2, &margin_size, &plot_size, &tick_label_distance);
-    let el_labels = create_beam_labels(
-        el_labels,
-        (&axis1, &axis2),
-        &margin_size,
-        &plot_size,
-        &tick_label_distance,
+
+    let label_plotter = LabelPlotter::from_frame((&axis1, &axis2), plot_size, margin_size);
+    let x_axis_label = label_plotter.plot(
+        "Distance (km)",
+        &LabelLoc::BottomAxis((axis1.end - axis1.start) as f64 / 2_f64),
+        axis_label_distance,
+        "x-axis",
     );
+    let y_axis_label = label_plotter.plot(
+        "Altitude (km)",
+        &LabelLoc::LeftAxis((axis2.end - axis2.start) as f64 / 2_f64),
+        axis_label_distance,
+        "y-axis",
+    );
+    let tick_labels_axis1 = create_tick_labels(&label_plotter, &axis1, &tick_label_distance);
+    let tick_labels_axis2 = create_tick_labels(&label_plotter, &axis2, &tick_label_distance);
+    let el_labels = create_beam_labels(&label_plotter, el_labels, &tick_label_distance);
 
     html! {
         <svg id="viewer" viewBox={ outer_view_box }>
@@ -108,24 +101,8 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
                     <rect width="100%" height="100%" class="frame" />
                 </svg>
             </g>
-            <text
-                class="axis-label"
-                x={ x_label_loc_x }
-                y={ x_label_loc_y }
-                text-anchor="middle"
-                dominant-baseline="hanging"
-            >
-                { "Distance (km)" }
-            </text>
-            <text
-                class="axis-label y-axis"
-                x={ y_label_loc_x }
-                y={ y_label_loc_y }
-                text-anchor="middle"
-                dominant-baseline="auto"
-            >
-                { "Altitude (km)" }
-            </text>
+            { x_axis_label }
+            { y_axis_label }
             { tick_labels_axis1 }
             { tick_labels_axis2 }
             { el_labels }
@@ -172,105 +149,48 @@ fn locate_beam_labels<'a>(
 }
 
 fn create_beam_labels<'a>(
+    label_plotter: &LabelPlotter,
     labels: impl Iterator<Item = (&'a f64, BeamLabelLoc)>,
-    axis: (&PlotAxisConfig, &PlotAxisConfig),
-    margin_size: &f64,
-    plot_size: &f64,
     tick_label_distance: &f64,
 ) -> Html {
-    let x_factor = plot_size / (axis.0.end - axis.0.start) as f64;
-    let y_factor = plot_size / (axis.1.end - axis.1.start) as f64;
-
-    let labels = labels.map(|(el, loc)| {
-        let coord = match loc {
-            BeamLabelLoc::MaxAltitude(dist) => {
-                let inc = dist * x_factor;
-                (margin_size + inc, margin_size - tick_label_distance)
-            }
-            BeamLabelLoc::MaxDistance(alt) => {
-                let inc = alt * y_factor;
-                (
-                    margin_size + plot_size + tick_label_distance,
-                    margin_size + plot_size - inc,
-                )
-            }
-        };
-        (el, coord)
-    });
-
     labels
-        .map(|(el, coord)| {
-            let el = format!("{:.0}", el);
-            let x = format!("{:.0}", coord.0);
-            let y = format!("{:.0}", coord.1);
-            html! {
-            <text
-                class="elevation-label y-axis"
-                x={ x }
-                y={ y }
-                text-anchor="end"
-                dominant-baseline="middle"
-            >
-                { el }
-            </text>
+        .map(|(el, loc)| {
+            let label = format!("{:.0}", el);
+            let class = "elevation-label";
+            match loc {
+                BeamLabelLoc::MaxAltitude(dist) => label_plotter.plot(
+                    &label,
+                    &LabelLoc::TopAxis(dist),
+                    *tick_label_distance,
+                    class,
+                ),
+                BeamLabelLoc::MaxDistance(alt) => label_plotter.plot(
+                    &label,
+                    &LabelLoc::RightAxis(alt),
+                    *tick_label_distance,
+                    class,
+                ),
             }
         })
         .collect::<Html>()
 }
 
 fn create_tick_labels(
+    label_plotter: &LabelPlotter,
     axis: &PlotAxisConfig,
-    margin_size: &f64,
-    plot_size: &f64,
     tick_label_distance: &f64,
 ) -> Html {
-    let factor = plot_size / (axis.end - axis.start) as f64;
-    let origin = match axis.name {
-        PlotAxisName::X => (*margin_size, margin_size + plot_size + tick_label_distance),
-        PlotAxisName::Y => (margin_size - tick_label_distance, margin_size + plot_size),
-    };
-
     (axis.start..=axis.end)
         .step_by(axis.major_step as usize)
         .map(|val| {
-            let inc = val as f64 * factor;
-            let coord = match axis.name {
-                PlotAxisName::X => (origin.0 + inc, origin.1),
-                PlotAxisName::Y => (origin.0, origin.1 - inc),
+            let label = format!("{:.0}", val / 1000); // km
+            let loc = match axis.name {
+                PlotAxisName::X => LabelLoc::BottomAxis(val as f64),
+                PlotAxisName::Y => LabelLoc::LeftAxis(val as f64),
             };
-            let km = val / 1000;
-            create_tick_label(km, coord, &axis.name)
+            label_plotter.plot(&label, &loc, *tick_label_distance, "tick-label")
         })
         .collect::<Html>()
-}
-
-fn create_tick_label(val: u32, (x, y): (f64, f64), axis: &PlotAxisName) -> Html {
-    let x = format!("{:.0}", x);
-    let y = format!("{:.0}", y);
-    match axis {
-        PlotAxisName::X => html! {
-            <text
-                class="tick-label x-axis"
-                x={ x }
-                y={ y }
-                text-anchor="middle"
-                dominant-baseline="hanging"
-            >
-                { val }
-            </text>
-        },
-        PlotAxisName::Y => html! {
-            <text
-                class="tick-label y-axis"
-                x={ x }
-                y={ y }
-                text-anchor="end"
-                dominant-baseline="middle"
-            >
-                { val }
-            </text>
-        },
-    }
 }
 
 #[function_component(App)]

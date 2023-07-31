@@ -64,14 +64,43 @@
         stroke-width: 3px;
       }
 
-      svg .axis-label {
+      svg .frame-top,
+      svg .frame-bottom {
+        text-anchor: middle;
+      }
+
+      svg .frame-right {
+        text-anchor: start;
+      }
+
+      svg .frame-left {
+        text-anchor: end;
+      }
+
+      svg .frame-top {
+        dominant-baseline: auto;
+      }
+
+      svg .frame-right,
+      svg .frame-left {
+        dominant-baseline: middle;
+      }
+
+      svg .frame-bottom {
+        dominant-baseline: hanging;
+      }
+
+      svg .x-axis,
+      svg .y-axis {
         font-size: 32px;
       }
 
-      svg .axis-label.y-axis {
+      svg .y-axis {
         transform-box: fill-box;
         transform-origin: center bottom;
         transform: rotate(-90deg);
+        text-anchor: middle;
+        dominant-baseline: auto;
       }
 
       svg .tick-label {
