@@ -11,10 +11,17 @@ use crate::{
 pub struct BeamViewerProps {
     pub lat_deg: f64,
     pub alt_meter: f64,
+    pub max_range_km: f64,
 }
 
 #[function_component(BeamViewer)]
-fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html {
+fn beam_viewer(
+    BeamViewerProps {
+        lat_deg,
+        alt_meter,
+        max_range_km,
+    }: &BeamViewerProps,
+) -> Html {
     let el_ranges = vec![
         ElevationRange::new(0, 2),
         ElevationRange::new(50, 5),
@@ -27,7 +34,7 @@ fn beam_viewer(BeamViewerProps { lat_deg, alt_meter }: &BeamViewerProps) -> Html
         .map(|i| i as f64)
         .collect::<Vec<_>>();
 
-    let max_range_meter = 300_000_f64;
+    let max_range_meter = max_range_km * 1_000_f64;
     let max_alt_meter = 15_000_f64;
     let n_range_section = 100;
 
@@ -199,6 +206,8 @@ fn app() -> Html {
     let alt_meter = *alt_meter_handle;
     let lat_deg_handle = use_state(|| 0.0_f64);
     let lat_deg = *lat_deg_handle;
+    let max_range_km_handle = use_state(|| 300.0_f64);
+    let max_range_km = *max_range_km_handle;
 
     let on_alt_change = Callback::from(move |e: Event| {
         let target: EventTarget = e.target().expect("unknown event target");
@@ -218,8 +227,18 @@ fn app() -> Html {
         // if value is not numeric, just ignore.
     });
 
+    let on_max_range_change = Callback::from(move |e: Event| {
+        let target: EventTarget = e.target().expect("unknown event target");
+        let value = target.unchecked_into::<HtmlInputElement>().value();
+        if let Ok(value) = value.parse() {
+            max_range_km_handle.set(value);
+        }
+        // if value is not numeric, just ignore.
+    });
+
     let alt_meter_value = format!("{}", alt_meter);
     let lat_deg_value = format!("{}", lat_deg);
+    let max_range_km_value = format!("{}", max_range_km);
 
     html! {
         <>
@@ -239,9 +258,16 @@ fn app() -> Html {
                         type="number"
                         value={ lat_deg_value }
                     />
+                    <br/>
+                    <label for="max-range">{"Max range (km)"}</label>
+                    <input onchange={ on_max_range_change }
+                        id="max-range"
+                        type="number"
+                        value={ max_range_km_value }
+                    />
                 </div>
                 <div>
-                    <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } />
+                    <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } max_range_km={ max_range_km } />
                 </div>
             </div>
         </>
