@@ -40,9 +40,14 @@ fn beam_viewer(
 
     let el_beam_points = iter_elevations(&el_ranges)
         .map(|el| {
-            let beam_points =
-                calc_beam_points(&max_range_meter, &n_range_section, &el, lat_deg, alt_meter)
-                    .collect::<Vec<_>>();
+            let beam_points = calc_beam_points(
+                &(max_range_meter + max_alt_meter),
+                &n_range_section,
+                &el,
+                lat_deg,
+                alt_meter,
+            )
+            .collect::<Vec<_>>();
             let highlighted = el_highlights.contains(&el);
             (el, highlighted, beam_points)
         })
