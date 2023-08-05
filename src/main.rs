@@ -74,11 +74,11 @@ fn beam_viewer(
 
     let axis_label_distance = 75_f64;
     let tick_label_distance = 20_f64;
-    let inner_height = format!("{:.0}", inner_height);
+    let inner_height = format!("{}", inner_height);
     let inner_width = format!("{:.0}", plot_size);
     let inner_view_box = format!("0 0 {} {}", max_range_meter, max_alt_meter);
     let transform = format!(
-        "translate({} {}) scale(1 -{:.0}) translate(0 -{})",
+        "translate({} {}) scale(1 -{}) translate(0 -{})",
         margin_size, margin_size, aspect_ratio, inner_height
     );
     let outer_size = plot_size + margin_size * 2_f64;
