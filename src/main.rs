@@ -280,6 +280,8 @@ fn app() -> Html {
 }
 
 fn main() {
+    #[cfg(debug_assertions)]
+    wasm_logger::init(wasm_logger::Config::default());
     yew::Renderer::<App>::new().render();
 }
 
