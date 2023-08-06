@@ -11,7 +11,7 @@ use crate::{
 pub struct BeamViewerProps {
     pub lat_deg: f64,
     pub alt_meter: f64,
-    pub max_range_km: f64,
+    pub distance_axis: DistanceAxis,
 }
 
 #[function_component(BeamViewer)]
@@ -19,7 +19,7 @@ fn beam_viewer(
     BeamViewerProps {
         lat_deg,
         alt_meter,
-        max_range_km,
+        distance_axis,
     }: &BeamViewerProps,
 ) -> Html {
     let el_ranges = vec![
@@ -34,7 +34,7 @@ fn beam_viewer(
         .map(|i| i as f64)
         .collect::<Vec<_>>();
 
-    let max_range_meter = max_range_km * 1_000_f64;
+    let max_range_meter = distance_axis.max as f64 * 1_000_f64;
     let max_alt_meter = 15_000_f64;
     let n_range_section = 100;
 
@@ -83,7 +83,13 @@ fn beam_viewer(
     );
     let outer_size = plot_size + margin_size * 2_f64;
     let outer_view_box = format!("0 0 {:.0} {:.0}", outer_size, outer_size);
-    let axis1 = PlotAxisConfig::new(PlotAxisName::X, 0, max_range_meter as u32, 50_000, 10_000);
+    let axis1 = PlotAxisConfig::new(
+        PlotAxisName::X,
+        0,
+        max_range_meter as u32,
+        (distance_axis.major_step * 1_000_f64) as u32,
+        (distance_axis.minor_step * 1_000_f64) as u32,
+    );
     let axis2 = PlotAxisConfig::new(PlotAxisName::Y, 0, max_alt_meter as u32, 5_000, 1_000);
     let grid_lines = create_grid_lines(&axis1, &axis2);
 
@@ -205,14 +211,65 @@ fn create_tick_labels(
         .collect::<Html>()
 }
 
+const DISTANCE_AXIS_OPTIONS: [DistanceAxis; 5] = [
+    DistanceAxis::new(10, 2.0, 0.5),
+    DistanceAxis::new(50, 10.0, 2.0),
+    DistanceAxis::new(100, 20.0, 5.0),
+    DistanceAxis::new(300, 50.0, 10.0),
+    DistanceAxis::new(500, 100.0, 20.0),
+];
+const DEFAULT_OBS_DISTANCE_AXIS_OPTION_INDEX: usize = 3;
+
+#[derive(PartialEq, Clone)]
+pub struct DistanceAxis {
+    // all in km
+    max: u16,
+    major_step: f64,
+    minor_step: f64,
+}
+
+impl DistanceAxis {
+    const fn new(max: u16, major_step: f64, minor_step: f64) -> Self {
+        Self {
+            max,
+            major_step,
+            minor_step,
+        }
+    }
+}
+
+fn create_html_select(id: String, current_index: usize, on_change: Callback<Event>) -> Html {
+    let value = format!("{}", current_index);
+
+    let options = DISTANCE_AXIS_OPTIONS
+        .into_iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            let km = format!("{}", entry.max);
+            let selected = index == current_index;
+            let index = format!("{}", index);
+            html! {<option value={ index } selected={ selected }>{ km }</option>}
+        })
+        .collect::<Html>();
+
+    html! {
+        <select onchange={ on_change }
+            id={ id }
+            value={ value }
+        >
+            { options }
+        </select>
+    }
+}
+
 #[function_component(App)]
 fn app() -> Html {
     let alt_meter_handle = use_state(|| 0.0_f64);
     let alt_meter = *alt_meter_handle;
     let lat_deg_handle = use_state(|| 0.0_f64);
     let lat_deg = *lat_deg_handle;
-    let max_range_km_handle = use_state(|| 300.0_f64);
-    let max_range_km = *max_range_km_handle;
+    let distance_index_handle = use_state(|| DEFAULT_OBS_DISTANCE_AXIS_OPTION_INDEX);
+    let distance_index = *distance_index_handle;
 
     let on_alt_change = Callback::from(move |e: Event| {
         let target: EventTarget = e.target().expect("unknown event target");
@@ -236,14 +293,15 @@ fn app() -> Html {
         let target: EventTarget = e.target().expect("unknown event target");
         let value = target.unchecked_into::<HtmlInputElement>().value();
         if let Ok(value) = value.parse() {
-            max_range_km_handle.set(value);
+            distance_index_handle.set(value);
         }
         // if value is not numeric, just ignore.
     });
 
     let alt_meter_value = format!("{}", alt_meter);
     let lat_deg_value = format!("{}", lat_deg);
-    let max_range_km_value = format!("{}", max_range_km);
+    let select = create_html_select("max-range".to_owned(), distance_index, on_max_range_change);
+    let distance_axis = DISTANCE_AXIS_OPTIONS[distance_index].clone();
 
     html! {
         <>
@@ -265,14 +323,10 @@ fn app() -> Html {
                     />
                     <br/>
                     <label for="max-range">{"Max range (km)"}</label>
-                    <input onchange={ on_max_range_change }
-                        id="max-range"
-                        type="number"
-                        value={ max_range_km_value }
-                    />
+                    { select }
                 </div>
                 <div>
-                    <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } max_range_km={ max_range_km } />
+                    <BeamViewer lat_deg={ lat_deg } alt_meter={ alt_meter } distance_axis={ distance_axis } />
                 </div>
             </div>
         </>
