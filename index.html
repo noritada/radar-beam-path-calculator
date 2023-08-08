@@ -4,6 +4,14 @@
     <meta charset="utf-8" />
     <title>Radar beam path calculator</title>
     <style>
+      :root {
+        --background-color: #dcdcdc;
+        --foreground-color: #000000;
+        --grid-line-color: #8f8f8f;
+        --beam-color: #3f3f3f;
+        --highlighted-beam-color: #00008b;
+      }
+
       body {
         height: 100vh;
         margin: 0;
@@ -12,7 +20,8 @@
         flex-direction: column;
         text-align: center;
         overflow-y: hidden;
-        background-color: #dcdcdc;
+        background-color: var(--background-color);
+        color: var(--foreground-color);
       }
 
       #main {
@@ -20,6 +29,13 @@
         display: flex;
         flex-direction: row;
         justify-content: space-evenly;
+      }
+
+      input,
+      select {
+        border: solid 1px var(--foreground-color);
+        background-color: var(--background-color);
+        color: var(--foreground-color);
       }
 
       #side-menu {
@@ -33,34 +49,34 @@
 
       .frame {
         fill: transparent;
-        stroke: #3f3f3f;
+        stroke: var(--beam-color);
         stroke-width: 1.5px;
         vector-effect: non-scaling-stroke;
       }
 
       .major-grid-line {
         fill: transparent;
-        stroke: #8f8f8f;
+        stroke: var(--grid-line-color);
         stroke-width: 1px;
         vector-effect: non-scaling-stroke;
       }
 
       .minor-grid-line {
         fill: transparent;
-        stroke: #8f8f8f;
+        stroke: var(--grid-line-color);
         stroke-width: 0.5px;
         vector-effect: non-scaling-stroke;
       }
 
       .beam-curve {
         fill: transparent;
-        stroke: #3f3f3f;
+        stroke: var(--beam-color);
         stroke-width: 2px;
         vector-effect: non-scaling-stroke;
       }
 
       .beam-curve.highlighted {
-        stroke: #00008b;
+        stroke: var(--highlighted-beam-color);
         stroke-width: 3px;
       }
 
@@ -92,6 +108,7 @@
 
       svg .x-axis,
       svg .y-axis {
+        fill: var(--foreground-color);
         font-size: 32px;
       }
 
@@ -104,11 +121,12 @@
       }
 
       svg .tick-label {
+        fill: var(--foreground-color);
         font-size: 28px;
       }
 
       svg .elevation-label {
-        fill: #00008b;
+        fill: var(--highlighted-beam-color);
         font-size: 28px;
       }
     </style>
