@@ -1,4 +1,4 @@
-name: Deploy the latest documentation and WASM app to GitHub Pages
+name: Deploy the WASM app to GitHub Pages
 on:
   push:
     branches: [ master ]
@@ -30,7 +30,7 @@ jobs:
       - name: Install trunk
         run: wget -qO- https://github.com/thedodd/trunk/releases/download/v0.16.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -xzf-
       - name: Build WASM
-        run: ../trunk build --public-url /radar-beam-path-calculator/ --release
+        run: ./trunk build --public-url /radar-beam-path-calculator/ --release
 
       - name: Fix file permissions
         shell: sh
