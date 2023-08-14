@@ -173,7 +173,7 @@ fn create_beam_labels<'a>(
 ) -> Html {
     labels
         .map(|(el, loc)| {
-            let label = format!("{:.0}", el);
+            let label = format!("{:.0}°", el);
             let class = "elevation-label";
             match loc {
                 BeamLabelLoc::MaxAltitude(dist) => label_plotter.plot(
