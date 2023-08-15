@@ -308,14 +308,14 @@ fn app() -> Html {
             <h1>{ "Radar beam path calculator" }</h1>
             <div id="main">
                 <div id="side-menu">
-                    <label for="radar-altitude">{"Altitude (m)"}</label>
+                    <label for="radar-altitude">{"Site altitude (m)"}</label>
                     <input onchange={ on_alt_change }
                         id="radar-altitude"
                         type="number"
                         value={ alt_meter_value }
                     />
                     <br/>
-                    <label for="radar-latitude">{"Latitude (deg)"}</label>
+                    <label for="radar-latitude">{"Site latitude (deg)"}</label>
                     <input onchange={ on_lat_change }
                         id="radar-latitude"
                         type="number"
