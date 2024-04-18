@@ -95,12 +95,16 @@ pub(crate) fn calc_earth_radius(lat_deg: f64) -> f64 {
     let wgs84_radius_earth_minor =
         WGS84_RADIUS_EARTH_MAJOR * (1_f64 - 1_f64 / WGS84_INV_FLATTENING);
     let lat = lat_deg.to_radians();
-    let cos_lat_2 = lat.cos().powf(2.into());
-    let sin_lat_2 = lat.sin().powf(2.into());
-    ((WGS84_RADIUS_EARTH_MAJOR.powf(4.into()) * cos_lat_2
-        + wgs84_radius_earth_minor.powf(4.into()) * sin_lat_2)
-        / (WGS84_RADIUS_EARTH_MAJOR.powf(2.into()) * cos_lat_2
-            + wgs84_radius_earth_minor.powf(2.into()) * sin_lat_2))
+    let cos_lat = lat.cos();
+    let cos_lat_2 = cos_lat * cos_lat;
+    let sin_lat = lat.sin();
+    let sin_lat_2 = sin_lat * sin_lat;
+    let wgs84_radius_earth_minor_2 = wgs84_radius_earth_minor * wgs84_radius_earth_minor;
+    let wgs84_radius_earth_minor_4 = wgs84_radius_earth_minor_2 * wgs84_radius_earth_minor_2;
+    let wgs84_radius_earth_major_2 = WGS84_RADIUS_EARTH_MAJOR * WGS84_RADIUS_EARTH_MAJOR;
+    let wgs84_radius_earth_major_4 = wgs84_radius_earth_major_2 * wgs84_radius_earth_major_2;
+    ((wgs84_radius_earth_major_4 * cos_lat_2 + wgs84_radius_earth_minor_4 * sin_lat_2)
+        / (wgs84_radius_earth_major_2 * cos_lat_2 + wgs84_radius_earth_minor_2 * sin_lat_2))
         .sqrt()
 }
 
